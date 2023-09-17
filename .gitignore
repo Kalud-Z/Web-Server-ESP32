@@ -1,0 +1,24 @@
+# Build directory
+build/
+
+# Configuration files that might change between developers or builds
+sdkconfig.old
+sdkconfig
+
+# IDE related directories
+.vscode/
+.devcontainer/
+
+# Any backup files or temporary files (if any)
+*~
+*.bak
+*.tmp
+*.swp
+
+# Python specific ignores
+__pycache__/
+*.pyc
+
+# If you don't want the pytest file in git, uncomment the next line
+# pytest_hello_world.py
+
