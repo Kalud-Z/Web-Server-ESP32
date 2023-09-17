@@ -5,17 +5,52 @@
 #include "esp_event.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
+#include "wifi_manager.h"
+#include "esp_http_server.h"
 
-#include "wifi_manager.h" // Include the header file for WiFi management functions.
 
 const char *TAG_MAIN = "main";
 
 void hello_world_task(void *pvParameter) {
     while (1) {
-        ESP_LOGI(TAG_MAIN, "Hello World babyy1112222");
+        ESP_LOGI(TAG_MAIN, "Hello World baby333333");
         vTaskDelay(1000 / 5); 
     }
 }
+
+
+esp_err_t hello_get_handler(httpd_req_t *req)
+{
+    const char* resp_str = "This is your response :)";
+    httpd_resp_send(req, resp_str, strlen(resp_str)); // Send response
+    return ESP_OK;
+}
+
+void start_webserver(void)
+{
+    httpd_handle_t server = NULL;
+    httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+
+    // Start the HTTP server
+    if (httpd_start(&server, &config) == ESP_OK) {
+        // Set URI handlers
+        httpd_uri_t hello_uri = {
+            .uri       = "/hello",
+            .method    = HTTP_GET,
+            .handler   = hello_get_handler,
+            .user_ctx  = NULL
+        };
+        httpd_register_uri_handler(server, &hello_uri);
+    }
+
+    // Print server status
+    if (server) {
+        ESP_LOGI(TAG_MAIN, "HTTP server started on port %d", config.server_port);
+    } else {
+        ESP_LOGE(TAG_MAIN, "Failed to start HTTP server!");
+    }
+}
+
 
 
 void app_main(void)
@@ -33,6 +68,6 @@ void app_main(void)
 
     ESP_LOGI(TAG_MAIN, "ESP_WIFI_MODE_STA");
     wifi_init_sta();
+
+    start_webserver();
 }
-
-
