@@ -77,5 +77,12 @@ void app_main(void)
 
     wifi_init_sta();
 
-    start_webserver();
+    while (1) {
+        if (wifi_connected_flag) {
+            start_webserver();
+            break; 
+        }
+        vTaskDelay(pdMS_TO_TICKS(2000));
+    }
+
 }

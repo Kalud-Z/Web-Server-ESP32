@@ -15,6 +15,8 @@ static EventGroupHandle_t s_wifi_event_group;
 
 esp_ip4_addr_t global_ip_address; 
 
+bool wifi_connected_flag = false;  // Set default to false
+
 
 /* The event group allows multiple bits for each event, but we only care about two events:
  * - we are connected to the AP with an IP
@@ -41,10 +43,11 @@ static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_
         ESP_LOGI(TAG,"connect to the AP fail");
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
-        global_ip_address = event->ip_info.ip;  // Store the IP address in the global variable
+        global_ip_address = event->ip_info.ip;  
         ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
         s_retry_num = 0;
         xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
+        wifi_connected_flag = true; 
     }
 }
 
