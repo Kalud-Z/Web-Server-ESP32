@@ -22,3 +22,8 @@ __pycache__/
 # If you don't want the pytest file in git, uncomment the next line
 # pytest_hello_world.py
 
+.idea
+
+cmake-build-debug/
+
+

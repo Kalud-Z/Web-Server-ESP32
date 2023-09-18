@@ -13,11 +13,10 @@ const char *TAG_MAIN = "main";
 
 void hello_world_task(void *pvParameter) {
     while (1) {
-        ESP_LOGI(TAG_MAIN, "Hello World baby333333");
+        ESP_LOGI(TAG_MAIN, "Hello World 44444");
         vTaskDelay(1000 / 5); 
     }
 }
-
 
 esp_err_t hello_get_handler(httpd_req_t *req)
 {
@@ -53,20 +52,22 @@ void start_webserver(void)
 
 
 
-void app_main(void)
-{
-    // Start the Hello World task
-    xTaskCreate(&hello_world_task, "hello_world_task", 2048, NULL, 5, NULL);
-
-    //Initialize NVS
-    esp_err_t ret = nvs_flash_init();
+void init_NVS() {
+   esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         ESP_ERROR_CHECK(nvs_flash_erase());
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
+}
 
-    ESP_LOGI(TAG_MAIN, "ESP_WIFI_MODE_STA");
+
+void app_main(void)
+{
+    xTaskCreate(&hello_world_task, "hello_world_task", 2048, NULL, 5, NULL);
+
+    init_NVS();
+
     wifi_init_sta();
 
     start_webserver();
