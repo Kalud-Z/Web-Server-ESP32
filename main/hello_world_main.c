@@ -17,12 +17,9 @@
 const char *TAG_MAIN = "main";
 
 
-
-
+static int32_t ws_data_counter = 1;
 
 static httpd_handle_t server = NULL;
-
-
 
 
 static esp_err_t websocket_handler(httpd_req_t *req) {
@@ -43,7 +40,7 @@ static esp_err_t websocket_handler(httpd_req_t *req) {
     // Check if this is a new client connecting using the presence of the "Sec-WebSocket-Key" header
     size_t buf_len = httpd_req_get_hdr_value_len(req, "Sec-WebSocket-Key") + 1;
     if (buf_len > 1) {
-        const char *welcome_msg = "this is a data via websocket";
+        const char *welcome_msg = "Congrats, u just connected to ESP32 Websocket Server";
         ws_pkt.len = strlen(welcome_msg);
         ws_pkt.type = HTTPD_WS_TYPE_TEXT;
         ws_pkt.payload = (uint8_t *)welcome_msg;
@@ -51,20 +48,15 @@ static esp_err_t websocket_handler(httpd_req_t *req) {
         return ESP_OK;
     }
 
-    // Existing client logic (for echo)
-    ret = httpd_ws_recv_frame(req, &ws_pkt, sizeof(buf));
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG_MAIN, "WebSocket receive error: %d", ret);
-        return ESP_FAIL;
-    } else if (ws_pkt.len == 0) {
-        // Connection closed by client
-        return ESP_OK;
-    } else {
-        if (ws_pkt.type == HTTPD_WS_TYPE_TEXT) {
-            // Echo the same message back
-            httpd_ws_send_frame(req, &ws_pkt);
-        }
-    }
+    // For existing client, send the data counter
+    char counter_msg[128];
+    sprintf(counter_msg, "data from ESP32 : %ld", ws_data_counter++);
+    ws_pkt.len = strlen(counter_msg);
+    ws_pkt.type = HTTPD_WS_TYPE_TEXT;
+    ws_pkt.payload = (uint8_t *)counter_msg;
+    httpd_ws_send_frame(req, &ws_pkt);
+
+    vTaskDelay(pdMS_TO_TICKS(2000));  // Delay for 2 seconds before sending next number
 
     return ESP_OK;
 }
@@ -91,24 +83,15 @@ static void start_websocket_server() {
 
 
 
-
-
-
-
-
-
-
-
-
 void hello_world_task(void *pvParameter) {
     while (1) {
         if (global_ip_address.addr) {
             ESP_LOGI(TAG_MAIN, "IP Address: " IPSTR, IP2STR(&global_ip_address));
         }
 
-        ESP_LOGI(TAG_MAIN, "Goodbye world 22222");
+        ESP_LOGI(TAG_MAIN, "Goodbye world 4444");
 
-        vTaskDelay(1000 / 2); 
+        vTaskDelay(3000 / 1); 
     }
 }
 
