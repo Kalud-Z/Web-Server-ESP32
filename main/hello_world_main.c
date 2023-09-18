@@ -7,13 +7,20 @@
 #include "nvs_flash.h"
 #include "wifi_manager.h"
 #include "esp_http_server.h"
+#include "esp_netif.h"
+
 
 
 const char *TAG_MAIN = "main";
 
 void hello_world_task(void *pvParameter) {
     while (1) {
-        ESP_LOGI(TAG_MAIN, "Hello World 44444");
+        if (global_ip_address.addr) {
+            ESP_LOGI(TAG_MAIN, "IP Address: " IPSTR, IP2STR(&global_ip_address));
+        }
+
+        ESP_LOGI(TAG_MAIN, "Hello World 9999");
+
         vTaskDelay(1000 / 5); 
     }
 }
