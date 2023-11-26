@@ -13,7 +13,6 @@
 
 
 
-
 const char *TAG_MAIN = "main";
 
 
@@ -51,7 +50,7 @@ void hello_world_task(void *pvParameter) {
             ESP_LOGI(TAG_MAIN, "IP Address: " IPSTR, IP2STR(&global_ip_address));
         }
 
-        ESP_LOGI(TAG_MAIN, "Goodbye world 1111");
+        ESP_LOGI(TAG_MAIN, "Goodbye world 33333");
 
         vTaskDelay(1000 / 5); 
     }

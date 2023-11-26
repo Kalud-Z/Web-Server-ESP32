@@ -51,3 +51,22 @@ Please use the following feedback channels:
 * For a feature request or bug report, create a [GitHub issue](https://github.com/espressif/esp-idf/issues)
 
 We will get back to you as soon as possible.
+
+
+##############################################################################################################
+
+how to configure and run this project on the ESP32 :
+
+-
+
+-
+
+-
+
+-
+
+-
+
+-
+
+

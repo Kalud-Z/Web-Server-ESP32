@@ -6,8 +6,8 @@
 #include "esp_log.h"
 
 
-#define EXAMPLE_ESP_WIFI_SSID      "Kakarotto"  
-#define EXAMPLE_ESP_WIFI_PASS      "1111zirkat"
+#define EXAMPLE_ESP_WIFI_SSID      "Zoldyck"  
+#define EXAMPLE_ESP_WIFI_PASS      "wa7diconnected"
 #define EXAMPLE_ESP_MAXIMUM_RETRY  5
 
 /* FreeRTOS event group to signal when we are connected*/
