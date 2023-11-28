@@ -13,8 +13,8 @@
 
 
 
+
 const char *TAG_MAIN = "main";
-const char *TAG_ws = "ws_server";
 
 
 void hello_world_task(void *pvParameter) {
@@ -23,7 +23,7 @@ void hello_world_task(void *pvParameter) {
             ESP_LOGI(TAG_MAIN, "IP Address: " IPSTR, IP2STR(&global_ip_address));
         }
 
-        ESP_LOGI(TAG_MAIN, "Goodbye world 44444");
+        ESP_LOGI(TAG_MAIN, "Goodbye world 5555");
 
         vTaskDelay(1000 / 5); 
     }
@@ -31,46 +31,55 @@ void hello_world_task(void *pvParameter) {
 
 
 
+static esp_err_t ws_handler(httpd_req_t *req)
+{
+    uint8_t buf[128] = { 0 };
+    httpd_ws_frame_t ws_pkt;
+    memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
+    ws_pkt.payload = buf;
 
-
-/* An example of WebSocket handler */
-static esp_err_t websocket_handler(httpd_req_t *req) {
-    if (req->method == HTTP_GET) {
-        ESP_LOGI(TAG_ws, "Handshake done, WebSocket connection established");
-        const char *response = "connection established :)";
-        httpd_ws_frame_t ws_response = {
-            .payload = (uint8_t *)response,
-            .len = strlen(response),
-            .type = HTTPD_WS_TYPE_TEXT,
-            .final = true,
-            .fragmented = false,  // Set fragmented to false for a complete message
-        };
-        httpd_ws_send_frame(req, &ws_response);
-        return ESP_OK;
+    // Receive the WebSocket message
+    esp_err_t ret = httpd_ws_recv_frame(req, &ws_pkt, 128);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG_MAIN, "Error receiving the frame");
+        return ESP_FAIL;
     }
-    // Handle other WebSocket events here
-    return ESP_FAIL;
+
+    // Handle the WebSocket message (echo in this case)
+    if (ws_pkt.type == HTTPD_WS_TYPE_TEXT &&
+        ws_pkt.len < 128) {
+        buf[ws_pkt.len] = '\0';  // Null-terminate the received string
+        ESP_LOGI(TAG_MAIN, "WebSocket Message: %s", buf);
+        // Echo the message back
+        httpd_ws_send_frame(req, &ws_pkt);
+    }
+
+    return ESP_OK;
 }
 
 
 
 void start_webserver(void)
 {
-  httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
 
     // Start the httpd server
-    ESP_LOGI(TAG_ws, "Starting server on port: '%d'", config.server_port);
+    httpd_handle_t server = NULL;
     if (httpd_start(&server, &config) == ESP_OK) {
-        // Register the WebSocket handler
+        ESP_LOGI(TAG_MAIN, "Server started");
+
+        // URI for WebSocket
         httpd_uri_t ws_uri = {
-            .uri       = "/ws", // The WebSocket endpoint
-            .method    = HTTP_GET,
-            .handler   = websocket_handler,
-            .user_ctx  = NULL
+            .uri        = "/ws",  // WebSocket endpoint
+            .method     = HTTP_GET,
+            .handler    = ws_handler,
+            .user_ctx   = NULL,
+            .is_websocket = true
         };
+
+        // Register WebSocket handler
         httpd_register_uri_handler(server, &ws_uri);
-    }   
+    }
 }
 
 
