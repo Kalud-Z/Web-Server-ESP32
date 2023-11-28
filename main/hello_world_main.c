@@ -44,19 +44,23 @@ static esp_err_t ws_handler(httpd_req_t *req) {
 
     // Create and populate a DataBatch
     DataBatch batch;
-    batch.batchID = 100;
+    batch.batchID = 1;
+
+
+ // Get current time in microseconds for the first data point
+    uint64_t currentTime = esp_timer_get_time();
 
     // Data Point 1
-    batch.dataPoints[0].timestamp = 11111111;
+    batch.dataPoints[0].timestamp = currentTime;
     batch.dataPoints[0].channel1Value = 50;
     batch.dataPoints[0].channel2Value = 150;
-    batch.dataPoints[0].dataPointID = 111;
+    batch.dataPoints[0].dataPointID = 1;
 
-    // Data Point 2
-    batch.dataPoints[1].timestamp = 11111112;
+    // Data Point 2: 
+    batch.dataPoints[1].timestamp = currentTime + 1000; //Current time + 1000 microseconds (1 millisecond)
     batch.dataPoints[1].channel1Value = 500;
     batch.dataPoints[1].channel2Value = 600;
-    batch.dataPoints[1].dataPointID = 222;
+    batch.dataPoints[1].dataPointID = 2;
 
     // Calculate the size of the binary data
     size_t binary_size = 4 + (2 * sizeof(DataPoint));
@@ -68,7 +72,7 @@ static esp_err_t ws_handler(httpd_req_t *req) {
 
 
     ESP_LOGI(TAG_MAIN, "Sending data batch of size: %zu bytes", binary_size);
-    
+
     // Serialize data into binary format
     uint8_t* ptr = binary_data;
     memcpy(ptr, &batch.batchID, 4); ptr += 4;
