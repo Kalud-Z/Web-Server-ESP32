@@ -13,11 +13,8 @@
 #include "esp_random.h"  // Include for random number generation
 
 
-
-
 const char *TAG_MAIN = "main";
 httpd_handle_t server = NULL; // Declare the server handle globally
-
 
 
 void hello_world_task(void *pvParameter) {
@@ -74,7 +71,7 @@ void start_webserver(void)
     config.server_port = 8999; // Set the port to 8999
 
     // Start the httpd server
-    httpd_handle_t server = NULL;
+    //httpd_handle_t server = NULL;
     if (httpd_start(&server, &config) == ESP_OK) {
         ESP_LOGI(TAG_MAIN, "Server started on port %d", config.server_port);
 
