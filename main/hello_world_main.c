@@ -1,5 +1,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/timers.h"        
 #include "freertos/event_groups.h"
 #include "esp_wifi.h"
 #include "esp_event.h"
@@ -14,6 +15,9 @@
 #include <time.h>
 #include "esp_timer.h"
 #include <inttypes.h>
+
+// Global variable to store the WebSocket request handle
+static httpd_req_t *global_req = NULL;
 
 
 
@@ -39,39 +43,43 @@ httpd_handle_t server = NULL; // Declare the server handle globally
 
 
 
-static esp_err_t ws_handler(httpd_req_t *req) {
-    ESP_LOGI(TAG_MAIN, "WebSocket Connection Started");
+void timerCallback(TimerHandle_t xTimer) {
+    static uint32_t batchCount = 1; // Static variable to track batch count
 
-    // Create and populate a DataBatch
+
+    // Check if the WebSocket connection is still valid
+    if (global_req == NULL) {
+        ESP_LOGE(TAG_MAIN, "inside timerCallback - WebSocket connection not established");
+        return;
+    }
+     else {
+        ESP_LOGI(TAG_MAIN, "global_req is valid in timerCallback");
+    }
+
+    ESP_LOGI(TAG_MAIN, "global_req set in ws_handler: %p", (void*)global_req);
+
+
     DataBatch batch;
-    batch.batchID = 1;
+    
+    batch.batchID = batchCount++; // Increment batch ID
 
-
- // Get current time in microseconds for the first data point
     uint64_t currentTime = esp_timer_get_time();
 
-    // Data Point 1
-    batch.dataPoints[0].timestamp = currentTime;
-    batch.dataPoints[0].channel1Value = 50;
-    batch.dataPoints[0].channel2Value = 150;
-    batch.dataPoints[0].dataPointID = 1;
-
-    // Data Point 2: 
-    batch.dataPoints[1].timestamp = currentTime + 1000; //Current time + 1000 microseconds (1 millisecond)
-    batch.dataPoints[1].channel1Value = 500;
-    batch.dataPoints[1].channel2Value = 600;
-    batch.dataPoints[1].dataPointID = 2;
+    // Populate data points with incremented timestamps
+    for (int i = 0; i < 2; i++) {
+        batch.dataPoints[i].timestamp = currentTime + (i * 1000); // 1 millisecond interval between data points
+        batch.dataPoints[i].channel1Value = 50 + (batchCount - 1) * 10; 
+        batch.dataPoints[i].channel2Value = 150 + (batchCount - 1) * 10;
+        batch.dataPoints[i].dataPointID = i + 1;
+    }
 
     // Calculate the size of the binary data
     size_t binary_size = 4 + (2 * sizeof(DataPoint));
     uint8_t* binary_data = malloc(binary_size);
     if (binary_data == NULL) {
         ESP_LOGE(TAG_MAIN, "Failed to allocate memory for binary data");
-        return ESP_FAIL;
+        return;
     }
-
-
-    ESP_LOGI(TAG_MAIN, "Sending data batch of size: %zu bytes", binary_size);
 
     // Serialize data into binary format
     uint8_t* ptr = binary_data;
@@ -83,7 +91,6 @@ static esp_err_t ws_handler(httpd_req_t *req) {
         memcpy(ptr, &batch.dataPoints[i].dataPointID, 4); ptr += 4;
     }
 
-
     // Prepare WebSocket packet
     httpd_ws_frame_t ws_pkt;
     memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
@@ -91,23 +98,77 @@ static esp_err_t ws_handler(httpd_req_t *req) {
     ws_pkt.payload = binary_data;
     ws_pkt.len = binary_size;
 
-    // Send the batch as binary data
-    esp_err_t ret = httpd_ws_send_frame(req, &ws_pkt);
-    free(binary_data); // Free the allocated memory
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG_MAIN, "Error sending frame: %s", esp_err_to_name(ret));
-        return ESP_FAIL;
+
+    ESP_LOGI(TAG_MAIN, "§§§§§§§§§§ JUST BEFORE SENDING - global_req set in ws_handler: %p", (void*)global_req);
+
+
+      // Send the batch as binary data
+    if (global_req != NULL && httpd_req_to_sockfd(global_req) >= 0) {
+        ESP_LOGI(TAG_MAIN, "§§§Sending frame - global_req: %p", (void*)global_req);
+        esp_err_t ret = httpd_ws_send_frame(global_req, &ws_pkt);
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG_MAIN, "§§§Error sending frame: %s", esp_err_to_name(ret));
+        }
+    } else {
+            ESP_LOGE(TAG_MAIN, "§§§global_req is NULL, skipping sending frame");
     }
 
-    ESP_LOGI(TAG_MAIN, "WebSocket Connection Closed");
-    return ESP_OK;
+
+    free(binary_data); // Free the allocated memory
+    //if (ret != ESP_OK) {
+    //      ESP_LOGE(TAG_MAIN, "Error sending frame: %s", esp_err_to_name(ret));
+          //return ESP_FAIL;
+    //}
+
+    // Check if we've sent all batches
+    if (batchCount > 50) {
+        xTimerStop(xTimer, 0); // Stop the timer
+        batchCount = 1; // Reset batch count for next time
+        // Close the WebSocket connection
+        // httpd_resp_send_done(global_req); // Uncomment if you want to close the connection
+    }
 }
 
 
 
+void start_timer() {
+    TimerHandle_t xTimer = xTimerCreate("Timer", pdMS_TO_TICKS(500), pdTRUE, 0, timerCallback);
+    xTimerStart(xTimer, 0);
+}
 
-void start_webserver(void)
-{
+
+
+static esp_err_t ws_handler(httpd_req_t *req) {
+    if (req != NULL) {
+        ESP_LOGI(TAG_MAIN, "WebSocket Connection Started");
+        global_req = req;
+        start_timer();
+        ESP_LOGI(TAG_MAIN, "global_req set in ws_handler: %p", (void*)global_req);
+        
+        // Return ESP_OK to indicate success
+        return ESP_OK;
+    } else {
+        ESP_LOGE(TAG_MAIN, "WebSocket Connection Failed");
+        // Return an error code to indicate failure
+        return ESP_FAIL;
+    }
+    
+    // Optional: Some compilers might still warn about no return at the end of the function.
+    // You can optionally add a return here, but it's not strictly necessary because of the if/else logic above.
+    // return ESP_OK; 
+}
+
+
+void close_handler() { //is not being used/implemented yet
+    if (global_req != NULL) {
+        global_req = NULL;
+        ESP_LOGI(TAG_MAIN, "WebSocket connection closed and global_req invalidated");
+    }
+}
+
+
+
+void start_webserver(void) {
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.server_port = 8999; // Set the port to 8999
 
