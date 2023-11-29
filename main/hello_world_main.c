@@ -39,6 +39,21 @@ httpd_handle_t server = NULL; // Declare the server handle globally
 static esp_err_t ws_handler(httpd_req_t *req) {
     ESP_LOGI(TAG_MAIN, "WebSocket Connection Started");
 
+    //send initial configuration message
+    const char* init_message = "{ \"type\": \"configuration\", \"channels\": 2 }";
+    httpd_ws_frame_t init_frame;
+    memset(&init_frame, 0, sizeof(httpd_ws_frame_t));
+    init_frame.type = HTTPD_WS_TYPE_TEXT;
+    init_frame.payload = (uint8_t*)init_message;
+    init_frame.len = strlen(init_message);
+
+    esp_err_t ret = httpd_ws_send_frame(req, &init_frame);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG_MAIN, "Error sending initial frame: %s", esp_err_to_name(ret));
+        return ESP_FAIL;
+    }
+
+
     for (uint32_t batchCount = 1; batchCount <= 35; batchCount++) {
         // Create and populate a DataBatch
         DataBatch batch;
