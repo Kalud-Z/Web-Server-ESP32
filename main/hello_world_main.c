@@ -14,7 +14,11 @@
 #include <time.h>
 #include "esp_timer.h"
 #include <inttypes.h>
+#include <sys/time.h>  // Include for getting system time
 
+
+const int totalDataPoints = 10000;
+const int dataPointsPerBatch = 10;
 
 
 typedef struct {
@@ -37,7 +41,6 @@ httpd_handle_t server = NULL; // Declare the server handle globally
 
 
 static uint8_t* generate_data_batch(uint32_t batchCount, size_t *binary_size_out) {
-    const int dataPointsPerBatch = 100;
     DataBatch batch;
     batch.batchID = batchCount;
     *binary_size_out = 4 + (dataPointsPerBatch * sizeof(DataPoint));
@@ -86,8 +89,7 @@ static esp_err_t ws_handler(httpd_req_t *req) {
         return ESP_FAIL;
     }
     
-    const int totalDataPoints = 30000;
-    const int totalBatches = totalDataPoints / 100;
+    const int totalBatches = totalDataPoints / dataPointsPerBatch;
 
     for (uint32_t batchCount = 1; batchCount <= totalBatches; batchCount++) {
         size_t binary_size;
@@ -95,6 +97,19 @@ static esp_err_t ws_handler(httpd_req_t *req) {
         if (binary_data == NULL) {
             return ESP_FAIL;
         }
+
+        // Get the current time
+        struct timeval tv_now;
+        gettimeofday(&tv_now, NULL);
+        struct tm *tm_now = localtime(&tv_now.tv_sec);
+
+        // Format the time
+        char strftime_buf[64];
+        strftime(strftime_buf, sizeof(strftime_buf), "%H:%M:%S", tm_now);
+
+        // Log the timestamp
+        ESP_LOGI(TAG_MAIN, "Dispatching batchID: %" PRIu32 " | timestamp: %s:%03ld", batchCount, strftime_buf, tv_now.tv_usec / 1000);
+
 
         httpd_ws_frame_t ws_pkt;
         memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
@@ -109,7 +124,7 @@ static esp_err_t ws_handler(httpd_req_t *req) {
             return ESP_FAIL;
         }
 
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelay(pdMS_TO_TICKS(10)); //TODO: Timer instead.
     }
 
     ESP_LOGI(TAG_MAIN, "WebSocket Connection Closed");
