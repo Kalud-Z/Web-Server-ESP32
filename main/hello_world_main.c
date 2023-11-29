@@ -36,10 +36,43 @@ httpd_handle_t server = NULL; // Declare the server handle globally
 
 
 
+static uint8_t* generate_data_batch(uint32_t batchCount, size_t *binary_size_out) {
+    const int dataPointsPerBatch = 100;
+    DataBatch batch;
+    batch.batchID = batchCount;
+    *binary_size_out = 4 + (dataPointsPerBatch * sizeof(DataPoint));
+    uint8_t* binary_data = malloc(*binary_size_out);
+    if (binary_data == NULL) {
+        ESP_LOGE(TAG_MAIN, "Failed to allocate memory for binary data");
+        return NULL;
+    }
+
+    uint8_t* ptr = binary_data;
+    memcpy(ptr, &batch.batchID, 4); ptr += 4;
+    uint64_t currentTime = esp_timer_get_time();
+
+    for (int i = 0; i < dataPointsPerBatch; i++) {
+        DataPoint point;
+        point.timestamp = currentTime + (i * 1000);
+
+        // Generate random values for channel1Value and channel2Value
+        point.channel1Value = 10000000 + esp_random() % (16777215 - 10000000 + 1);
+        point.channel2Value = 10000000 + esp_random() % (16777215 - 10000000 + 1);
+        
+        point.dataPointID = (batchCount - 1) * dataPointsPerBatch + i + 1;
+
+        memcpy(ptr, &point, sizeof(DataPoint)); ptr += sizeof(DataPoint);
+    }
+
+    return binary_data;
+}
+
+
+
 static esp_err_t ws_handler(httpd_req_t *req) {
     ESP_LOGI(TAG_MAIN, "WebSocket Connection Started");
 
-    //send initial configuration message
+    // Send initial configuration message
     const char* init_message = "{ \"type\": \"configuration\", \"channels\": 2 }";
     httpd_ws_frame_t init_frame;
     memset(&init_frame, 0, sizeof(httpd_ws_frame_t));
@@ -52,59 +85,31 @@ static esp_err_t ws_handler(httpd_req_t *req) {
         ESP_LOGE(TAG_MAIN, "Error sending initial frame: %s", esp_err_to_name(ret));
         return ESP_FAIL;
     }
+    
+    const int totalDataPoints = 30000;
+    const int totalBatches = totalDataPoints / 100;
 
-
-    for (uint32_t batchCount = 1; batchCount <= 35; batchCount++) {
-        // Create and populate a DataBatch
-        DataBatch batch;
-        batch.batchID = batchCount; // Set batch ID to current count
-
-        uint64_t currentTime = esp_timer_get_time(); // Get current time in microseconds
-
-        // Populate data points with incremented timestamps
-        for (int i = 0; i < 2; i++) {
-            batch.dataPoints[i].timestamp = currentTime + (i * 1000); // 1 millisecond interval between data points
-            batch.dataPoints[i].channel1Value = 50 + (batchCount - 1) * 10; // Example variation
-            batch.dataPoints[i].channel2Value = 150 + (batchCount - 1) * 10; // Example variation
-            batch.dataPoints[i].dataPointID = i + 1;
-        }
-
-        // Calculate the size of the binary data
-        size_t binary_size = 4 + (2 * sizeof(DataPoint));
-        uint8_t* binary_data = malloc(binary_size);
+    for (uint32_t batchCount = 1; batchCount <= totalBatches; batchCount++) {
+        size_t binary_size;
+        uint8_t* binary_data = generate_data_batch(batchCount, &binary_size);
         if (binary_data == NULL) {
-            ESP_LOGE(TAG_MAIN, "Failed to allocate memory for binary data");
             return ESP_FAIL;
         }
 
-        // Serialize data into binary format
-        uint8_t* ptr = binary_data;
-        memcpy(ptr, &batch.batchID, 4); ptr += 4;
-        for (int i = 0; i < 2; i++) {
-            memcpy(ptr, &batch.dataPoints[i].timestamp, 8); ptr += 8;
-            memcpy(ptr, &batch.dataPoints[i].channel1Value, 4); ptr += 4;
-            memcpy(ptr, &batch.dataPoints[i].channel2Value, 4); ptr += 4;
-            memcpy(ptr, &batch.dataPoints[i].dataPointID, 4); ptr += 4;
-        }
-
-            // Prepare WebSocket packet
         httpd_ws_frame_t ws_pkt;
         memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
         ws_pkt.type = HTTPD_WS_TYPE_BINARY;
         ws_pkt.payload = binary_data;
         ws_pkt.len = binary_size;
 
-          // Send the batch as binary data
         esp_err_t ret = httpd_ws_send_frame(req, &ws_pkt);
-        free(binary_data); // Free the allocated memory
+        free(binary_data);
         if (ret != ESP_OK) {
             ESP_LOGE(TAG_MAIN, "Error sending frame: %s", esp_err_to_name(ret));
             return ESP_FAIL;
         }
 
-
-        // Wait for 10 milliseconds before sending the next batch
-        vTaskDelay(pdMS_TO_TICKS(500));
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 
     ESP_LOGI(TAG_MAIN, "WebSocket Connection Closed");
