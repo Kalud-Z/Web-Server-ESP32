@@ -19,6 +19,7 @@
 
 const int totalDataPoints = 10000;
 const int dataPointsPerBatch = 10;
+int sampleRate = 10;
 
 
 typedef struct {
@@ -92,8 +93,13 @@ static esp_err_t ws_handler(httpd_req_t *req) {
     const int totalBatches = totalDataPoints / dataPointsPerBatch;
 
     for (uint32_t batchCount = 1; batchCount <= totalBatches; batchCount++) {
+        int64_t startTime = esp_timer_get_time();  // Start time in microseconds
+
         size_t binary_size;
         uint8_t* binary_data = generate_data_batch(batchCount, &binary_size);
+        int64_t endTime = esp_timer_get_time();  // End time in microseconds
+        int64_t generationTime = (endTime - startTime) / 1000;  // Convert to milliseconds
+
         if (binary_data == NULL) {
             return ESP_FAIL;
         }
@@ -124,7 +130,14 @@ static esp_err_t ws_handler(httpd_req_t *req) {
             return ESP_FAIL;
         }
 
-        vTaskDelay(pdMS_TO_TICKS(10)); //TODO: Timer instead.
+         if (generationTime > sampleRate) {
+            ESP_LOGE(TAG_MAIN, "$$$$$Data generation took longer than target interval: %" PRId64 " ms", generationTime);
+            // Handle the error condition here (e.g., skip sending this batch, reset, etc.)
+            continue;  // Skip to the next iteration, or use a different handling approach
+        }
+
+        int finalDelayTime = sampleRate - generationTime;
+        vTaskDelay(pdMS_TO_TICKS(finalDelayTime)); //TODO: Timer instead. // the logging of the timestamps proved that this clock is VERY accurate.
     }
 
     ESP_LOGI(TAG_MAIN, "WebSocket Connection Closed");
