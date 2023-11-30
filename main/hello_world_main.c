@@ -104,10 +104,27 @@ static esp_err_t ws_handler(httpd_req_t *req) {
         }
 
         int finalDelayTime = sampleRate - generationTime;
-        vTaskDelay(pdMS_TO_TICKS(finalDelayTime)); //TODO: Timer instead. // the logging of the timestamps proved that this clock is VERY accurate.
+        vTaskDelay(pdMS_TO_TICKS(finalDelayTime)); 
     }
 
-    ESP_LOGI(TAG_MAIN, "WebSocket Connection Closed");
+    // After all data has been sent, send a final structured message to indicate completion
+    char done_message[64];
+    snprintf(done_message, sizeof(done_message), "{ \"type\": \"simulationState\", \"value\": \"DONE\" }");
+    httpd_ws_frame_t done_frame;
+    memset(&done_frame, 0, sizeof(httpd_ws_frame_t));
+    done_frame.type = HTTPD_WS_TYPE_TEXT;
+    done_frame.payload = (uint8_t*)done_message;
+    done_frame.len = strlen(done_message);
+
+    esp_err_t ret2 = httpd_ws_send_frame(req, &done_frame);
+    if (ret2 != ESP_OK) {
+        ESP_LOGE(TAG_MAIN, "Error sending done frame: %s", esp_err_to_name(ret2));
+        // Handle error appropriately
+    }
+
+
+
+    //ESP_LOGI(TAG_MAIN, "WebSocket Connection Closed");
     return ESP_OK;
 }
 
