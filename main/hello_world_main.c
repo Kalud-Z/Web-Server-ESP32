@@ -12,73 +12,25 @@
 #include "esp_vfs.h"
 #include "esp_random.h"  // Include for random number generation
 #include <time.h>
-#include "esp_timer.h"
 #include <inttypes.h>
 #include <sys/time.h>  // Include for getting system time
 #include "lwip/apps/sntp.h"
 #include <stdlib.h>
 #include "ntp_time.h"
+#include "data_generation.h"
+#include "esp_timer.h"
+
+
 
 const char *TAG_MAIN = "main";
 
 
-const int totalDataPoints = 1000;
-const int dataPointsPerBatch = 5;
+const int totalDataPoints = 10000;
+const int dataPointsPerBatch = 10;
 int sampleRate = 10;
 
 
-#pragma pack(push, 1)
-typedef struct {
-    uint64_t timestamp;       // Timestamp
-    uint32_t channel1Value;   // Channel 1 value
-    uint32_t channel2Value;   // Channel 2 value
-    uint32_t dataPointID;     // Data point ID
-} DataPoint;
-
-typedef struct {
-    uint32_t batchID;
-    DataPoint dataPoints[5]; // Array of 5 DataPoints
-} DataBatch;
-#pragma pack(pop)
-
-
-
 httpd_handle_t server = NULL; // Declare the server handle globally
-
-
-
-static uint8_t* generate_data_batch(uint32_t batchCount, size_t *binary_size_out) {
-    DataBatch batch;
-    batch.batchID = batchCount;
-    *binary_size_out = 4 + (dataPointsPerBatch * sizeof(DataPoint));
-    uint8_t* binary_data = malloc(*binary_size_out);
-    if (binary_data == NULL) {
-        ESP_LOGE(TAG_MAIN, "Failed to allocate memory for binary data");
-        return NULL;
-    }
-
-    uint8_t* ptr = binary_data;
-    memcpy(ptr, &batch.batchID, 4); ptr += 4;
-    uint64_t currentTime = esp_timer_get_time();
-
-    for (int i = 0; i < dataPointsPerBatch; i++) {
-        DataPoint point;
-        point.timestamp = currentTime + (i * 1000);
-
-        // Generate random values for channel1Value and channel2Value
-        point.channel1Value = 10000000 + esp_random() % (16777215 - 10000000 + 1);
-        point.channel2Value = 10000000 + esp_random() % (16777215 - 10000000 + 1);
-        
-        point.dataPointID = (batchCount - 1) * dataPointsPerBatch + i + 1;
-        //ESP_LOGI(TAG_MAIN, "Generated dataPointID: %u", point.dataPointID);
-        //ESP_LOGI(TAG_MAIN, "Generated dataPointID: %lu", (unsigned long)point.dataPointID);
-
-
-        memcpy(ptr, &point, sizeof(DataPoint)); ptr += sizeof(DataPoint);
-    }
-
-    return binary_data;
-}
 
 
 
@@ -105,7 +57,7 @@ static esp_err_t ws_handler(httpd_req_t *req) {
         int64_t startTime = esp_timer_get_time();  // Start time in microseconds
 
         size_t binary_size;
-        uint8_t* binary_data = generate_data_batch(batchCount, &binary_size);
+        uint8_t* binary_data = generate_data_batch(batchCount, &binary_size, dataPointsPerBatch);
         int64_t endTime = esp_timer_get_time();  // End time in microseconds
         int64_t generationTime = (endTime - startTime) / 1000;  // Convert to milliseconds
 
@@ -114,7 +66,7 @@ static esp_err_t ws_handler(httpd_req_t *req) {
         }
 
         // Log the total size of the batch being sent
-        ESP_LOGI(TAG_MAIN, "Sending batchID: %" PRIu32 " | Size: %zu bytes", batchCount, binary_size);
+        //ESP_LOGI(TAG_MAIN, "Sending batchID: %" PRIu32 " | Size: %zu bytes", batchCount, binary_size);
 
 
         // Get the current time
