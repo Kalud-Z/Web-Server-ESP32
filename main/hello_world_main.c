@@ -17,7 +17,9 @@
 #include <sys/time.h>  // Include for getting system time
 #include "lwip/apps/sntp.h"
 #include <stdlib.h>
+#include "ntp_time.h"
 
+const char *TAG_MAIN = "main";
 
 
 const int totalDataPoints = 10000;
@@ -39,37 +41,8 @@ typedef struct {
 
 
 
-const char *TAG_MAIN = "main";
+
 httpd_handle_t server = NULL; // Declare the server handle globally
-
-
-void initialize_sntp(void) {
-    sntp_setoperatingmode(SNTP_OPMODE_POLL);
-    sntp_setservername(0, "de.pool.ntp.org"); 
-    sntp_init();
-}
-
-void obtain_time(void) {
-   initialize_sntp();
-
-    // Set timezone to Central European Time (CET) with DST
-    setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
-    tzset();
-
-    // Wait for time to be set
-    time_t now = 0;
-    struct tm timeinfo = { 0 };
-    int retry = 0;
-    const int retry_count = 10;
-    while (timeinfo.tm_year < (2016 - 1900) && ++retry < retry_count) {
-        ESP_LOGI(TAG_MAIN, "Waiting for system time to be set... (%d/%d)", retry, retry_count);
-        vTaskDelay(2000 / portTICK_PERIOD_MS);
-        time(&now);
-        localtime_r(&now, &timeinfo);
-    }
-}
-
-
 
 
 
@@ -227,7 +200,7 @@ void hello_world_task(void *pvParameter) {
             ESP_LOGI(TAG_MAIN, "IP Address: " IPSTR, IP2STR(&global_ip_address));
         }
 
-        ESP_LOGI(TAG_MAIN, "Goodbye world 5555");
+        ESP_LOGI(TAG_MAIN, "Goodbye world 666");
 
         vTaskDelay(10000 / 5); 
     }
