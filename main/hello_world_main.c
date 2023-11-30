@@ -22,11 +22,12 @@
 const char *TAG_MAIN = "main";
 
 
-const int totalDataPoints = 10000;
-const int dataPointsPerBatch = 10;
+const int totalDataPoints = 1000;
+const int dataPointsPerBatch = 5;
 int sampleRate = 10;
 
 
+#pragma pack(push, 1)
 typedef struct {
     uint64_t timestamp;       // Timestamp
     uint32_t channel1Value;   // Channel 1 value
@@ -36,9 +37,9 @@ typedef struct {
 
 typedef struct {
     uint32_t batchID;
-    DataPoint dataPoints[2]; // Array of 2 DataPoints
+    DataPoint dataPoints[5]; // Array of 5 DataPoints
 } DataBatch;
-
+#pragma pack(pop)
 
 
 
@@ -69,6 +70,9 @@ static uint8_t* generate_data_batch(uint32_t batchCount, size_t *binary_size_out
         point.channel2Value = 10000000 + esp_random() % (16777215 - 10000000 + 1);
         
         point.dataPointID = (batchCount - 1) * dataPointsPerBatch + i + 1;
+        //ESP_LOGI(TAG_MAIN, "Generated dataPointID: %u", point.dataPointID);
+        //ESP_LOGI(TAG_MAIN, "Generated dataPointID: %lu", (unsigned long)point.dataPointID);
+
 
         memcpy(ptr, &point, sizeof(DataPoint)); ptr += sizeof(DataPoint);
     }
@@ -108,6 +112,10 @@ static esp_err_t ws_handler(httpd_req_t *req) {
         if (binary_data == NULL) {
             return ESP_FAIL;
         }
+
+        // Log the total size of the batch being sent
+        ESP_LOGI(TAG_MAIN, "Sending batchID: %" PRIu32 " | Size: %zu bytes", batchCount, binary_size);
+
 
         // Get the current time
         struct timeval tv_now;
