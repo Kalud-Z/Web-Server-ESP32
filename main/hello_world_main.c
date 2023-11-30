@@ -35,10 +35,11 @@ const char *TAG_MAIN = "main";
 httpd_handle_t server = NULL; // Declare the server handle globally
 
 
+
+
 static esp_err_t ws_handler(httpd_req_t *req) {
     ESP_LOGI(TAG_MAIN, "WebSocket Connection Started");
 
-    // Send initial configuration message
     char init_message[64];
     snprintf(init_message, sizeof(init_message), "{ \"type\": \"configuration\", \"channels\": %d }", numberOfChannels);
     httpd_ws_frame_t init_frame;
@@ -53,12 +54,11 @@ static esp_err_t ws_handler(httpd_req_t *req) {
         return ESP_FAIL;
     }
 
-    // Start sending data batches for a specified duration
-    int64_t startSendingTime = esp_timer_get_time(); // Start time in microseconds
-    uint32_t batchCount = 0; // Initialize batch count
+    int64_t startSendingTime = esp_timer_get_time();
+    uint32_t batchCount = 0;
 
     while (esp_timer_get_time() - startSendingTime < durationOfSimulation) {
-        batchCount++; // Increment batch count
+        batchCount++;
 
         size_t binary_size;
         uint8_t* binary_data = generate_data_batch(batchCount, &binary_size, dataPointsPerBatch, numberOfChannels);
@@ -67,33 +67,36 @@ static esp_err_t ws_handler(httpd_req_t *req) {
             return ESP_FAIL;
         }
 
-        // Log the timestamp
-        struct timeval tv_now;
-        gettimeofday(&tv_now, NULL);
-        struct tm *tm_now = localtime(&tv_now.tv_sec);
-        char strftime_buf[64];
-        strftime(strftime_buf, sizeof(strftime_buf), "%H:%M:%S", tm_now);
-        ESP_LOGI(TAG_MAIN, "Dispatching batchID: %" PRIu32 " | timestamp: %s:%03ld", batchCount, strftime_buf, tv_now.tv_usec / 1000);
+        uint64_t sendTimestamp = esp_timer_get_time();
 
-        // Send the data batch
+        size_t combined_size = sizeof(sendTimestamp) + binary_size;
+        uint8_t* combined_data = malloc(combined_size);
+        if (combined_data == NULL) {
+            free(binary_data);
+            return ESP_FAIL;
+        }
+
+        memcpy(combined_data, &sendTimestamp, sizeof(sendTimestamp));
+        memcpy(combined_data + sizeof(sendTimestamp), binary_data, binary_size);
+        free(binary_data);
+
         httpd_ws_frame_t ws_pkt;
         memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
         ws_pkt.type = HTTPD_WS_TYPE_BINARY;
-        ws_pkt.payload = binary_data;
-        ws_pkt.len = binary_size;
+        ws_pkt.payload = combined_data;
+        ws_pkt.len = combined_size;
 
         ret = httpd_ws_send_frame(req, &ws_pkt);
-        free(binary_data);
+        free(combined_data);
 
         if (ret != ESP_OK) {
             ESP_LOGE(TAG_MAIN, "Error sending frame: %s", esp_err_to_name(ret));
             return ESP_FAIL;
         }
 
-        vTaskDelay(pdMS_TO_TICKS(sampleRate)); 
+        vTaskDelay(pdMS_TO_TICKS(sampleRate));
     }
 
-    // Send end of simulation message
     char done_message[64];
     snprintf(done_message, sizeof(done_message), "{ \"type\": \"simulationState\", \"value\": \"DONE\" }");
     httpd_ws_frame_t done_frame;
@@ -105,7 +108,6 @@ static esp_err_t ws_handler(httpd_req_t *req) {
     ret = httpd_ws_send_frame(req, &done_frame);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG_MAIN, "Error sending done frame: %s", esp_err_to_name(ret));
-        // Handle error appropriately
     }
 
     return ESP_OK;
