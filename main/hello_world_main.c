@@ -24,6 +24,7 @@
 
 const char *TAG_MAIN = "main";
 
+const int numberOfChannels = 5;
 
 const int totalDataPoints = 10000;
 const int dataPointsPerBatch = 10;
@@ -37,8 +38,9 @@ httpd_handle_t server = NULL; // Declare the server handle globally
 static esp_err_t ws_handler(httpd_req_t *req) {
     ESP_LOGI(TAG_MAIN, "WebSocket Connection Started");
 
-    // Send initial configuration message
-    const char* init_message = "{ \"type\": \"configuration\", \"channels\": 2 }";
+     // Declare the init_message with enough size to hold the longest possible string
+    char init_message[64];
+    snprintf(init_message, sizeof(init_message), "{ \"type\": \"configuration\", \"channels\": %d }", numberOfChannels);
     httpd_ws_frame_t init_frame;
     memset(&init_frame, 0, sizeof(httpd_ws_frame_t));
     init_frame.type = HTTPD_WS_TYPE_TEXT;
@@ -57,7 +59,7 @@ static esp_err_t ws_handler(httpd_req_t *req) {
         int64_t startTime = esp_timer_get_time();  // Start time in microseconds
 
         size_t binary_size;
-        uint8_t* binary_data = generate_data_batch(batchCount, &binary_size, dataPointsPerBatch);
+        uint8_t* binary_data = generate_data_batch(batchCount, &binary_size, dataPointsPerBatch, numberOfChannels);
         int64_t endTime = esp_timer_get_time();  // End time in microseconds
         int64_t generationTime = (endTime - startTime) / 1000;  // Convert to milliseconds
 

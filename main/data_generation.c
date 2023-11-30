@@ -11,18 +11,14 @@
 
 static const char *TAG = "DataGeneration";
 
-
-
 // Helper function to generate sine wave data
 static uint32_t generate_sine_data(double angle, uint32_t min, uint32_t max) {
     double sine_value = sin(angle);
     return (uint32_t)(((sine_value + 1) / 2) * (max - min) + min);
 }
 
-uint8_t* generate_data_batch(uint32_t batchCount, size_t *binary_size_out, int dataPointsPerBatch) {
-    DataBatch batch;
-    batch.batchID = batchCount;
-    *binary_size_out = 4 + (dataPointsPerBatch * sizeof(DataPoint));
+uint8_t* generate_data_batch(uint32_t batchCount, size_t *binary_size_out, int dataPointsPerBatch,  int numberOfChannels) {
+    *binary_size_out = 4 + (dataPointsPerBatch * (sizeof(uint64_t) + (numberOfChannels * sizeof(uint32_t)) + sizeof(uint32_t)));
     uint8_t* binary_data = malloc(*binary_size_out);
     if (binary_data == NULL) {
         ESP_LOGE(TAG, "Failed to allocate memory for binary data");
@@ -30,7 +26,8 @@ uint8_t* generate_data_batch(uint32_t batchCount, size_t *binary_size_out, int d
     }
 
     uint8_t* ptr = binary_data;
-    memcpy(ptr, &batch.batchID, 4); ptr += 4;
+    // Write batch ID at the start of the binary data
+    memcpy(ptr, &batchCount, 4); ptr += 4;
 
     // Constants for the sine wave generation
     const uint32_t min = 10000000;
@@ -43,20 +40,22 @@ uint8_t* generate_data_batch(uint32_t batchCount, size_t *binary_size_out, int d
     for (int i = 0; i < dataPointsPerBatch; i++) {
         totalDataPointsGenerated++; // Increment total data points generated
 
-        DataPoint point;
-        point.timestamp = esp_timer_get_time();
+        // Write timestamp
+        uint64_t timestamp = esp_timer_get_time();
+        memcpy(ptr, &timestamp, sizeof(timestamp)); ptr += sizeof(timestamp);
 
-        // Calculate the sine wave values
-        double angle = (2 * M_PI * (totalDataPointsGenerated % totalPointsInPeriod)) / totalPointsInPeriod;
-        point.channel1Value = generate_sine_data(angle, min, max);
-        point.channel2Value = generate_sine_data(angle, min, max);
+        // Write channel values
+        for (int channel = 0; channel < numberOfChannels; channel++) {
+            // Calculate the sine wave values for each channel
+            double angle = (2 * M_PI * (totalDataPointsGenerated % totalPointsInPeriod)) / totalPointsInPeriod;
+            uint32_t value = generate_sine_data(angle, min, max);
+            memcpy(ptr, &value, sizeof(value)); ptr += sizeof(value);
+        }
 
-        point.dataPointID = dataPointId++;
-
-        memcpy(ptr, &point, sizeof(DataPoint)); ptr += sizeof(DataPoint);
+        // Write data point ID
+        memcpy(ptr, &dataPointId, sizeof(dataPointId)); ptr += sizeof(dataPointId);
+        dataPointId++;
     }
 
     return binary_data;
 }
-
-
