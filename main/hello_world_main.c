@@ -29,12 +29,13 @@ const int sampleRate = 20;
 
 
 
-
 const char *TAG_MAIN = "main";
-
 httpd_handle_t server = NULL; // Declare the server handle globally
 
 
+// Global variables for tracking data size
+volatile size_t total_size_sent = 0;
+volatile size_t size_sent_per_second = 0;
 
 
 static esp_err_t ws_handler(httpd_req_t *req) {
@@ -62,10 +63,7 @@ static esp_err_t ws_handler(httpd_req_t *req) {
 
         size_t binary_size;
         uint8_t* binary_data = generate_data_batch(batchCount, &binary_size, dataPointsPerBatch, numberOfChannels);
-
-        if (binary_data == NULL) {
-            return ESP_FAIL;
-        }
+        if (binary_data == NULL) { return ESP_FAIL;}
 
         // Use gettimeofday to get current time
         struct timeval tv;
@@ -91,6 +89,9 @@ static esp_err_t ws_handler(httpd_req_t *req) {
         ws_pkt.payload = combined_data;
         ws_pkt.len = combined_size;
 
+        total_size_sent += combined_size;
+        size_sent_per_second += combined_size;
+
         ret = httpd_ws_send_frame(req, &ws_pkt);
         free(combined_data);
 
@@ -98,9 +99,11 @@ static esp_err_t ws_handler(httpd_req_t *req) {
             ESP_LOGE(TAG_MAIN, "Error sending frame: %s", esp_err_to_name(ret));
             return ESP_FAIL;
         }
-
+       
         vTaskDelay(pdMS_TO_TICKS(sampleRate));
     }
+
+    ESP_LOGI(TAG_MAIN, "Total Data Sent: %zu bytes", total_size_sent);
 
     char done_message[64];
     snprintf(done_message, sizeof(done_message), "{ \"type\": \"simulationState\", \"value\": \"DONE\" }");
@@ -114,6 +117,7 @@ static esp_err_t ws_handler(httpd_req_t *req) {
     if (ret != ESP_OK) {
         ESP_LOGE(TAG_MAIN, "Error sending done frame: %s", esp_err_to_name(ret));
     }
+
 
     return ESP_OK;
 }
