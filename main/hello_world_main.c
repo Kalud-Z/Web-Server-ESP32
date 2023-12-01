@@ -36,10 +36,26 @@ httpd_handle_t server = NULL; // Declare the server handle globally
 // Global variables for tracking data size
 volatile size_t total_size_sent = 0;
 volatile size_t size_sent_per_second = 0;
+volatile bool sending_done = false; 
+
+
+
+
+void log_data_size_per_second(void *pvParameter) {
+    while (!sending_done) {
+        ESP_LOGI(TAG_MAIN, "Data Sent in Last Second: %zu bytes", size_sent_per_second);
+        size_sent_per_second = 0;
+        vTaskDelay(1000 / portTICK_PERIOD_MS); // Delay for 1 second
+    }
+
+    vTaskDelete(NULL);
+}
 
 
 static esp_err_t ws_handler(httpd_req_t *req) {
     ESP_LOGI(TAG_MAIN, "WebSocket Connection Started");
+    xTaskCreate(&log_data_size_per_second, "log_data_task", 2048, NULL, 5, NULL);
+
 
     char init_message[64];
     snprintf(init_message, sizeof(init_message), "{ \"type\": \"configuration\", \"channels\": %d }", numberOfChannels);
@@ -103,6 +119,7 @@ static esp_err_t ws_handler(httpd_req_t *req) {
         vTaskDelay(pdMS_TO_TICKS(sampleRate));
     }
 
+    sending_done = true;
     ESP_LOGI(TAG_MAIN, "Total Data Sent: %zu bytes", total_size_sent);
 
     char done_message[64];
@@ -153,12 +170,6 @@ void start_webserver(void)
 }
 
 
-
-
-
-
-
-
 void init_NVS() {
    esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -193,6 +204,7 @@ void app_main(void)
 
 
     wifi_init_sta();
+
 
     while (1) {
         if (wifi_connected_flag) {
