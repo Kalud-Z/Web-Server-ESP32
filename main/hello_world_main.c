@@ -67,7 +67,12 @@ static esp_err_t ws_handler(httpd_req_t *req) {
             return ESP_FAIL;
         }
 
-        uint64_t sendTimestamp = esp_timer_get_time();
+        // Use gettimeofday to get current time
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        uint64_t sendTimestamp = (uint64_t)(tv.tv_sec) * 1000LL + (uint64_t)(tv.tv_usec) / 1000LL; // Convert to milliseconds
+        
+        ESP_LOGI(TAG_MAIN, "Sending Timestamp: %" PRIu64, sendTimestamp);
 
         size_t combined_size = sizeof(sendTimestamp) + binary_size;
         uint8_t* combined_data = malloc(combined_size);
@@ -75,7 +80,7 @@ static esp_err_t ws_handler(httpd_req_t *req) {
             free(binary_data);
             return ESP_FAIL;
         }
-
+    
         memcpy(combined_data, &sendTimestamp, sizeof(sendTimestamp));
         memcpy(combined_data + sizeof(sendTimestamp), binary_data, binary_size);
         free(binary_data);
