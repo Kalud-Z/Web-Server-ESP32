@@ -21,8 +21,8 @@
 #include "esp_timer.h"
 
 
-int64_t durationOfSimulation = 30000000; // 10 seconds in microseconds
-const int numberOfChannels = 3;
+int64_t durationOfSimulation = 30000000; // 30 seconds in microseconds
+const int numberOfChannels = 10;
 const int dataPointsPerBatch = 10;
 const int sampleRate = 10;
 
@@ -82,12 +82,14 @@ static esp_err_t ws_handler(httpd_req_t *req) {
     uint32_t batchCount = 0;
 
     while (esp_timer_get_time() - startSendingTime < durationOfSimulation) {
+        int64_t iterationStartTime = esp_timer_get_time();
+
         batchCount++;
 
         size_t binary_size;
-        int64_t startGenerationTime = esp_timer_get_time(); 
+        //int64_t startGenerationTime = esp_timer_get_time(); 
         uint8_t* binary_data = generate_data_batch(batchCount, &binary_size, dataPointsPerBatch, numberOfChannels);
-        int64_t dataGenerationDuration = esp_timer_get_time() - startGenerationTime; 
+        //int64_t dataGenerationDuration = esp_timer_get_time() - startGenerationTime; 
         if (binary_data == NULL) { return ESP_FAIL;}
 
         total_data_points_sent += dataPointsPerBatch;
@@ -129,14 +131,18 @@ static esp_err_t ws_handler(httpd_req_t *req) {
        
 
         // Adjust delay to account for data generation time
-        int delayTime = pdMS_TO_TICKS(sampleRate - (dataGenerationDuration / 1000)); // Convert microseconds to milliseconds
-        if (delayTime < 0) {
-            ESP_LOGI(TAG_MAIN, "__WARNING__ generation of data took longer than sample rate !");
-            delayTime = 0;
+        //int delayTime = pdMS_TO_TICKS(sampleRate - (dataGenerationDuration / 1000)); // Convert microseconds to milliseconds
+        //if (delayTime < 0) {
+        //    ESP_LOGI(TAG_MAIN, "__WARNING__ generation of data took longer than sample rate !");
+        //    delayTime = 0;
+        //}
+
+        int64_t iterationDuration = esp_timer_get_time() - iterationStartTime;
+        if (iterationDuration < 10000) { // 10,000 microseconds = 10 milliseconds
+            vTaskDelay(pdMS_TO_TICKS(10 - (iterationDuration / 1000)));
         }
         
-
-        vTaskDelay(delayTime);
+        //vTaskDelay(delayTime);
         //vTaskDelay(pdMS_TO_TICKS(sampleRate));
     }
 
@@ -146,6 +152,8 @@ static esp_err_t ws_handler(httpd_req_t *req) {
 
     float mean_average = (float)total_size_per_second / count_of_data_points;
     ESP_LOGI(TAG_MAIN, "Mean Average Data Sent Per Second: %f bytes", mean_average);
+    ESP_LOGI(TAG_MAIN, "Total Number of Data Batches Sent: %lu", (unsigned long)batchCount);
+
 
 
     char done_message[64];
