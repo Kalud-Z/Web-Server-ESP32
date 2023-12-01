@@ -21,8 +21,8 @@
 #include "esp_timer.h"
 
 
-int64_t durationOfSimulation = 30000000; // 30 seconds in microseconds
-const int numberOfChannels = 10;
+int64_t durationOfSimulation = 10000000; // 30 seconds in microseconds
+const int numberOfChannels = 4;
 const int dataPointsPerBatch = 10;
 const int sampleRate = 10;
 
