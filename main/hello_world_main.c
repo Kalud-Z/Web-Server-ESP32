@@ -22,7 +22,7 @@
 
 
 int64_t durationOfSimulation = 30000000; // 10 seconds in microseconds
-const int numberOfChannels = 2;
+const int numberOfChannels = 3;
 const int dataPointsPerBatch = 10;
 const int sampleRate = 10;
 
@@ -33,21 +33,30 @@ httpd_handle_t server = NULL; // Declare the server handle globally
 
 // Global variables for tracking data size
 volatile size_t total_size_sent = 0;
-volatile size_t size_sent_per_second = 0;
 volatile bool sending_done = false; 
 volatile size_t total_data_points_sent = 0;
+
+volatile size_t size_sent_per_second = 0;
+volatile size_t total_size_per_second = 0; // Total of data sent per second
+volatile int count_of_data_points = 0; // Count of data sent per second records
+
 
 
 
 void log_data_size_per_second(void *pvParameter) {
     while (!sending_done) {
         ESP_LOGI(TAG_MAIN, "Data Sent in Last Second: %zu bytes", size_sent_per_second);
+        if (size_sent_per_second > 0) {
+            total_size_per_second += size_sent_per_second;
+            count_of_data_points++;
+        }
         size_sent_per_second = 0;
         vTaskDelay(1000 / portTICK_PERIOD_MS); // Delay for 1 second
     }
-
     vTaskDelete(NULL);
 }
+
+
 
 
 static esp_err_t ws_handler(httpd_req_t *req) {
@@ -134,6 +143,10 @@ static esp_err_t ws_handler(httpd_req_t *req) {
     sending_done = true;
     ESP_LOGI(TAG_MAIN, "Total Data Sent: %zu bytes", total_size_sent);
     ESP_LOGI(TAG_MAIN, "Total Data Points Sent: %zu", total_data_points_sent);
+
+    float mean_average = (float)total_size_per_second / count_of_data_points;
+    ESP_LOGI(TAG_MAIN, "Mean Average Data Sent Per Second: %f bytes", mean_average);
+
 
     char done_message[64];
     snprintf(done_message, sizeof(done_message), "{ \"type\": \"simulationState\", \"value\": \"DONE\" }");
