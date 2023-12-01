@@ -21,12 +21,10 @@
 #include "esp_timer.h"
 
 
-
 int64_t durationOfSimulation = 10000000; // 10 seconds in microseconds
 const int numberOfChannels = 5;
 const int dataPointsPerBatch = 20;
 const int sampleRate = 20;
-
 
 
 const char *TAG_MAIN = "main";
@@ -37,7 +35,7 @@ httpd_handle_t server = NULL; // Declare the server handle globally
 volatile size_t total_size_sent = 0;
 volatile size_t size_sent_per_second = 0;
 volatile bool sending_done = false; 
-
+volatile size_t total_data_points_sent = 0;
 
 
 
@@ -81,6 +79,8 @@ static esp_err_t ws_handler(httpd_req_t *req) {
         uint8_t* binary_data = generate_data_batch(batchCount, &binary_size, dataPointsPerBatch, numberOfChannels);
         if (binary_data == NULL) { return ESP_FAIL;}
 
+        total_data_points_sent += dataPointsPerBatch;
+
         // Use gettimeofday to get current time
         struct timeval tv;
         gettimeofday(&tv, NULL);
@@ -121,6 +121,7 @@ static esp_err_t ws_handler(httpd_req_t *req) {
 
     sending_done = true;
     ESP_LOGI(TAG_MAIN, "Total Data Sent: %zu bytes", total_size_sent);
+    ESP_LOGI(TAG_MAIN, "Total Data Points Sent: %zu", total_data_points_sent);
 
     char done_message[64];
     snprintf(done_message, sizeof(done_message), "{ \"type\": \"simulationState\", \"value\": \"DONE\" }");
