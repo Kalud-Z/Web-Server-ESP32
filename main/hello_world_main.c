@@ -21,10 +21,10 @@
 #include "esp_timer.h"
 
 
-int64_t durationOfSimulation = 10000000; // 10 seconds in microseconds
-const int numberOfChannels = 5;
-const int dataPointsPerBatch = 20;
-const int sampleRate = 20;
+int64_t durationOfSimulation = 30000000; // 10 seconds in microseconds
+const int numberOfChannels = 2;
+const int dataPointsPerBatch = 10;
+const int sampleRate = 10;
 
 
 const char *TAG_MAIN = "main";
@@ -76,7 +76,9 @@ static esp_err_t ws_handler(httpd_req_t *req) {
         batchCount++;
 
         size_t binary_size;
+        int64_t startGenerationTime = esp_timer_get_time(); 
         uint8_t* binary_data = generate_data_batch(batchCount, &binary_size, dataPointsPerBatch, numberOfChannels);
+        int64_t dataGenerationDuration = esp_timer_get_time() - startGenerationTime; 
         if (binary_data == NULL) { return ESP_FAIL;}
 
         total_data_points_sent += dataPointsPerBatch;
@@ -116,7 +118,17 @@ static esp_err_t ws_handler(httpd_req_t *req) {
             return ESP_FAIL;
         }
        
-        vTaskDelay(pdMS_TO_TICKS(sampleRate));
+
+        // Adjust delay to account for data generation time
+        int delayTime = pdMS_TO_TICKS(sampleRate - (dataGenerationDuration / 1000)); // Convert microseconds to milliseconds
+        if (delayTime < 0) {
+            ESP_LOGI(TAG_MAIN, "__WARNING__ generation of data took longer than sample rate !");
+            delayTime = 0;
+        }
+        
+
+        vTaskDelay(delayTime);
+        //vTaskDelay(pdMS_TO_TICKS(sampleRate));
     }
 
     sending_done = true;
@@ -199,7 +211,7 @@ void app_main(void)
 {
     //init_spiffs();
 
-    xTaskCreate(&hello_world_task, "hello_world_task", 2048, NULL, 5, NULL);
+    //xTaskCreate(&hello_world_task, "hello_world_task", 2048, NULL, 5, NULL);
 
     init_NVS();
 
