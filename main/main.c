@@ -14,7 +14,6 @@
 #include "clock_synch/ntp_time.h"
 #include "data_generation/data_generation.h"
 #include "data_transmission/websocket.h"
-//#include "esp_timer.h"
 
 
 const char *TAG_MAIN = "main";
