@@ -8,18 +8,13 @@
 #include "wifi_setup/wifi_manager.h"
 #include "esp_http_server.h"
 #include "esp_netif.h"
-#include "esp_spiffs.h"
-#include "esp_vfs.h"
 #include "esp_random.h"  // Include for random number generation
-#include <time.h>
 #include <inttypes.h>
-#include <sys/time.h>  // Include for getting system time
-#include "lwip/apps/sntp.h"
 #include <stdlib.h>
 #include "clock_synch/ntp_time.h"
 #include "data_generation/data_generation.h"
 #include "data_transmission/websocket.h"
-#include "esp_timer.h"
+//#include "esp_timer.h"
 
 
 const char *TAG_MAIN = "main";
