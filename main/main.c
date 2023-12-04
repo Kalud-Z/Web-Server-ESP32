@@ -5,7 +5,7 @@
 #include "esp_event.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
-#include "wifi_manager.h"
+#include "wifi_setup/wifi_manager.h"
 #include "esp_http_server.h"
 #include "esp_netif.h"
 #include "esp_spiffs.h"
@@ -16,8 +16,8 @@
 #include <sys/time.h>  // Include for getting system time
 #include "lwip/apps/sntp.h"
 #include <stdlib.h>
-#include "ntp_time.h"
-#include "data_generation.h"
+#include "clock_synch/ntp_time.h"
+#include "data_generation/data_generation.h"
 #include "esp_timer.h"
 
 

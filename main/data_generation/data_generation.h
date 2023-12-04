@@ -18,8 +18,6 @@ typedef struct {
 // DataBatch structure to hold a batch of data points
 typedef struct {
     uint32_t batchID;
-    // Since DataPoint now uses a flexible array member, we can't have an array of DataPoint.
-    // Instead, we'll manage the data batch as a contiguous block of memory in the C file.
 } DataBatch;
 
 #pragma pack(pop)
