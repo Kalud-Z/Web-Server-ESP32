@@ -21,10 +21,10 @@
 #include "esp_timer.h"
 
 
-int64_t durationOfSimulation = 10000000; // 30 seconds in microseconds
-const int numberOfChannels = 4;
-const int dataPointsPerBatch = 10;
-const int sampleRate = 10;
+int64_t durationOfSimulation = 30000000; // 30 seconds in microseconds
+const int numberOfChannels = 10;
+const int dataPointsPerBatch = 250;
+const int sampleRate = 250;
 
 
 const char *TAG_MAIN = "main";
@@ -130,20 +130,12 @@ static esp_err_t ws_handler(httpd_req_t *req) {
         }
        
 
-        // Adjust delay to account for data generation time
-        //int delayTime = pdMS_TO_TICKS(sampleRate - (dataGenerationDuration / 1000)); // Convert microseconds to milliseconds
-        //if (delayTime < 0) {
-        //    ESP_LOGI(TAG_MAIN, "__WARNING__ generation of data took longer than sample rate !");
-        //    delayTime = 0;
-        //}
 
         int64_t iterationDuration = esp_timer_get_time() - iterationStartTime;
-        if (iterationDuration < 10000) { // 10,000 microseconds = 10 milliseconds
-            vTaskDelay(pdMS_TO_TICKS(10 - (iterationDuration / 1000)));
+        if (iterationDuration < sampleRate * 1000) {
+            vTaskDelay(pdMS_TO_TICKS(sampleRate - (iterationDuration / 1000)));
         }
         
-        //vTaskDelay(delayTime);
-        //vTaskDelay(pdMS_TO_TICKS(sampleRate));
     }
 
     sending_done = true;
