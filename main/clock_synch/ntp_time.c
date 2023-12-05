@@ -26,14 +26,11 @@ void obtain_time(void) {
     int retry = 0;
     const int retry_count = 10;
     while (timeinfo.tm_year < (2016 - 1900) && ++retry < retry_count) {
-        ESP_LOGI(TAG_NTP, "This is timeinfo.tm_year :  %d", timeinfo.tm_year);
         ESP_LOGI(TAG_NTP, "Waiting for system time to be set... (%d/%d)", retry, retry_count);
         vTaskDelay(2000 / portTICK_PERIOD_MS);
-        time(&now);
-       
-        localtime_r(&now, &timeinfo);
-    }
-    ESP_LOGI(TAG_NTP, "This is timeinfo.tm_year :  %d", timeinfo.tm_year);
 
+        time(&now);
+        localtime_r(&now, &timeinfo); //transform time in &now into struct tm format.
+    }
 }
 
