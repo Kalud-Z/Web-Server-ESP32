@@ -5,7 +5,6 @@
 #include "esp_event.h"
 #include "esp_log.h"
 
-
 #define EXAMPLE_ESP_WIFI_SSID      "Zoldyck"  
 #define EXAMPLE_ESP_WIFI_PASS      "wa7diconnected"
 

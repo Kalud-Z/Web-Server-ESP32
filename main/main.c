@@ -45,12 +45,8 @@ void hello_world_task(void *pvParameter) {
 
 void app_main(void)
 {
-    //init_spiffs();
-
     //xTaskCreate(&hello_world_task, "hello_world_task", 2048, NULL, 5, NULL);
-
-    init_NVS();
-
+    init_NVS(); //we need this, for wifi to function properly.
     wifi_init_sta();
 
     while (1) {

@@ -16,9 +16,9 @@ const char *TAG_WS = "websocket";
 
 
 int64_t durationOfSimulation = 30000000; // 30 seconds in microseconds
-const int numberOfChannels = 2;
-const int dataPointsPerBatch = 250;
-const int sampleRate = 250;
+const int numberOfChannels = 4;
+const int dataPointsPerBatch = 50;
+const int sampleRate = 50;
 
 
 volatile size_t total_size_sent = 0;
@@ -125,6 +125,8 @@ esp_err_t run_simulation(httpd_req_t *req) {
         }
        
         int64_t iterationDuration = esp_timer_get_time() - iterationStartTime;
+        //ESP_LOGI(TAG_WS, "iterationDuration: %lu", iterationDuration);
+
         if (iterationDuration < sampleRate * 1000) {
             vTaskDelay(pdMS_TO_TICKS(sampleRate - (iterationDuration / 1000)));
         }

@@ -11,5 +11,4 @@ extern esp_ip4_addr_t global_ip_address;
 extern bool wifi_connected_flag;  
 
 
-
 #endif
