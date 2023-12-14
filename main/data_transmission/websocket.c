@@ -10,15 +10,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../data_generation/data_generation.h" 
+#include <inttypes.h>
 
 
 const char *TAG_WS = "websocket";
 
 
 int64_t durationOfSimulation = 30000000; // 30 seconds in microseconds
-const int numberOfChannels = 6;
-const int dataPointsPerBatch = 50;
-const int sampleRate = 50;
+const int numberOfChannels = 10;
+const int dataPointsPerBatch = 20;
+const int sampleRate = 20;  
 
 
 volatile size_t total_size_sent = 0;
@@ -81,10 +82,16 @@ esp_err_t run_simulation(httpd_req_t *req) {
     while (esp_timer_get_time() - startSendingTime < durationOfSimulation) {
         int64_t iterationStartTime = esp_timer_get_time();
 
+        // Variables to store start and end times of tasks
+        int64_t startGenTime, endGenTime, startSendTime, endSendTime;
+
         batchCount++;
 
+
         size_t binary_size;
+        startGenTime = esp_timer_get_time();
         uint8_t* binary_data = generate_data_batch(batchCount, &binary_size, dataPointsPerBatch, numberOfChannels);
+        endGenTime = esp_timer_get_time();
         if (binary_data == NULL) { return ESP_FAIL;}
 
         total_data_points_sent += dataPointsPerBatch;
@@ -116,7 +123,10 @@ esp_err_t run_simulation(httpd_req_t *req) {
         total_size_sent += combined_size;
         size_sent_per_second += combined_size;
 
+        startSendTime = esp_timer_get_time();
         esp_err_t ret = httpd_ws_send_frame(req, &ws_pkt);
+        endSendTime = esp_timer_get_time();
+
         free(combined_data);
 
         if (ret != ESP_OK) {
@@ -125,11 +135,20 @@ esp_err_t run_simulation(httpd_req_t *req) {
         }
        
         int64_t iterationDuration = esp_timer_get_time() - iterationStartTime;
-        //ESP_LOGI(TAG_WS, "iterationDuration: %lu", iterationDuration);
 
         if (iterationDuration < sampleRate * 1000) {
             vTaskDelay(pdMS_TO_TICKS(sampleRate - (iterationDuration / 1000)));
         }
+        else {
+            int64_t iterationDurationMs = iterationDuration / 1000;
+            int64_t genDurationMs = (endGenTime - startGenTime) / 1000;
+            int64_t sendDurationMs = (endSendTime - startSendTime) / 1000;
+
+            ESP_LOGW(TAG_WS, "WARNING: Iteration duration (%lld ms) is longer than the sample rate. Batch Count: %" PRIu32, iterationDurationMs, batchCount);
+            ESP_LOGW(TAG_WS, "Task A (Data Generation) took %lld ms", genDurationMs);
+            ESP_LOGW(TAG_WS, "Task C (Sending Data) took %lld ms", sendDurationMs);
+        }
+
         
     } //end of while loop
 
