@@ -4,14 +4,13 @@
 #include "esp_wifi.h"
 #include "esp_event.h"
 #include "esp_log.h"
+#include "esp_wpa2.h"  // Include for WPA2-Enterprise
+#include <string.h>
 
-#define EXAMPLE_ESP_WIFI_SSID      "Zoldyck"  
-#define EXAMPLE_ESP_WIFI_PASS      "wa7diconnected"
 
-
-//#define EXAMPLE_ESP_WIFI_SSID      "Kalud_XZ2"  
-//#define EXAMPLE_ESP_WIFI_PASS      "forzaroma"
-
+#define EXAMPLE_ESP_WIFI_SSID      "hsx"  // Set your university's WiFi SSID here
+#define EXAMPLE_ESP_WIFI_USERNAME  "FH\\fahemkha"   // Set your username here
+#define EXAMPLE_ESP_WIFI_PASS      "emchibarka"   // Set your password here
 
 #define EXAMPLE_ESP_MAXIMUM_RETRY  5
 
@@ -21,7 +20,6 @@ static EventGroupHandle_t s_wifi_event_group;
 esp_ip4_addr_t global_ip_address; 
 
 bool wifi_connected_flag = false;  // Set default to false
-
 
 /* The event group allows multiple bits for each event, but we only care about two events:
  * - we are connected to the AP with an IP
@@ -68,6 +66,21 @@ void wifi_init_sta(void)
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
+    // Set the mode and configuration for WPA2-Enterprise
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+    wifi_config_t wifi_config = {
+        .sta = {
+            .ssid = EXAMPLE_ESP_WIFI_SSID,
+        },
+    };
+    ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
+
+    // Configure the WPA2-Enterprise parameters
+    ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_set_identity((uint8_t *)EXAMPLE_ESP_WIFI_USERNAME, strlen(EXAMPLE_ESP_WIFI_USERNAME)));
+    ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_set_username((uint8_t *)EXAMPLE_ESP_WIFI_USERNAME, strlen(EXAMPLE_ESP_WIFI_USERNAME)));
+    ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_set_password((uint8_t *)EXAMPLE_ESP_WIFI_PASS, strlen(EXAMPLE_ESP_WIFI_PASS)));
+    ESP_ERROR_CHECK(esp_wifi_sta_wpa2_ent_enable());
+
     esp_event_handler_instance_t instance_any_id;
     esp_event_handler_instance_t instance_got_ip;
     ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
@@ -81,18 +94,6 @@ void wifi_init_sta(void)
                                                         NULL,
                                                         &instance_got_ip));
 
-    wifi_config_t wifi_config = {
-        .sta = {
-            .ssid = EXAMPLE_ESP_WIFI_SSID,
-            .password = EXAMPLE_ESP_WIFI_PASS,
-            /* Setting a password implies station will connect to all security modes including WEP/WPA.
-             * However these modes are deprecated and not advisable to be used. Incase your Access point
-             * doesn't support WPA2, these mode can be enabled by commenting below line */
-	     .threshold.authmode = WIFI_AUTH_WPA2_PSK,
-        },
-    };
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config) );
     ESP_ERROR_CHECK(esp_wifi_start() );
 
     ESP_LOGI(TAG, "wifi_init_sta finished.");
@@ -108,11 +109,11 @@ void wifi_init_sta(void)
     /* xEventGroupWaitBits() returns the bits before the call returned, hence we can test which event actually
      * happened. */
     if (bits & WIFI_CONNECTED_BIT) {
-        ESP_LOGI(TAG, "connected to ap SSID:%s password:%s",
-                 EXAMPLE_ESP_WIFI_SSID, EXAMPLE_ESP_WIFI_PASS);
+        ESP_LOGI(TAG, "connected to ap SSID:%s",
+                 EXAMPLE_ESP_WIFI_SSID);
     } else if (bits & WIFI_FAIL_BIT) {
-        ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s",
-                 EXAMPLE_ESP_WIFI_SSID, EXAMPLE_ESP_WIFI_PASS);
+        ESP_LOGI(TAG, "Failed to connect to SSID:%s",
+                 EXAMPLE_ESP_WIFI_SSID);
     } else {
         ESP_LOGE(TAG, "UNEXPECTED EVENT");
     }
