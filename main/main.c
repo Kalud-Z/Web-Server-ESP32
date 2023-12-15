@@ -16,6 +16,9 @@
 #include "data_transmission/websocket.h"
 
 
+bool useUniWifi = false;
+
+
 const char *TAG_MAIN = "main";
 
 
@@ -47,7 +50,10 @@ void app_main(void)
 {
     //xTaskCreate(&hello_world_task, "hello_world_task", 2048, NULL, 5, NULL);
     init_NVS(); //we need this, for wifi to function properly.
-    wifi_init_sta();
+
+
+      // Check the flag and call the appropriate function
+    if (useUniWifi) {  wifi_init_sta_UNI();} else {wifi_init_sta_LOCAL();}
 
     while (1) {
         if (wifi_connected_flag) {
