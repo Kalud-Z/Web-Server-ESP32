@@ -17,10 +17,9 @@
 
 #define EXAMPLE_ESP_WIFI_SSID_LOCAL      "Zoldyck"  
 #define EXAMPLE_ESP_WIFI_PASS_LOCAL      "wa7diconnected"
+
 //#define EXAMPLE_ESP_WIFI_SSID_LOCAL      "Kalud_XZ2"  
 //#define EXAMPLE_ESP_WIFI_PASS_LOCAL      "forzaroma"
-
-
 
 
 #define EXAMPLE_ESP_MAXIMUM_RETRY  5
@@ -59,6 +58,10 @@ static void event_handler(void* arg, esp_event_base_t event_base, int32_t event_
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
         global_ip_address = event->ip_info.ip;  
         ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
+
+        uint8_t mac[6];
+        ESP_ERROR_CHECK(esp_wifi_get_mac(ESP_IF_WIFI_STA, mac));
+        ESP_LOGI(TAG, "WiFi MAC Address: %02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
         s_retry_num = 0;
         xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
