@@ -11,6 +11,8 @@
 #include <string.h>
 #include "../data_generation/data_generation.h" 
 #include <inttypes.h>
+#include "esp_heap_caps.h"
+
 
 
 const char *TAG_WS = "websocket";
@@ -18,9 +20,9 @@ const char *TAG_WS = "websocket";
 
 int64_t durationOfSimulation = 30000000; // 30 seconds in microseconds
 //int64_t durationOfSimulation = 120000000; // 2 minutes seconds in microseconds
-const int numberOfChannels = 10;
-const int dataPointsPerBatch = 20;
-const int sampleRate = 20;  
+const int numberOfChannels = 6;
+const int dataPointsPerBatch = 10;
+const int sampleRate = 10;  
 
 
 volatile size_t total_size_sent = 0;
@@ -35,6 +37,18 @@ volatile int count_of_data_points = 0; // Count of data sent per second records
 httpd_handle_t server = NULL;
 
 
+
+
+void monitor_ram_usage() {
+    int total_ram = heap_caps_get_total_size(MALLOC_CAP_8BIT);
+    int free_ram = heap_caps_get_free_size(MALLOC_CAP_8BIT);
+    int used_ram = total_ram - free_ram;
+    float ram_usage_percent = ((float)used_ram / total_ram) * 100;
+
+    ESP_LOGI(TAG_WS, "RAM Usage: %.2f%%", ram_usage_percent);
+}
+
+
 void log_data_size_per_second(void *pvParameter) {
     while (!sending_done) {
         ESP_LOGI(TAG_WS, "Data Sent in Last Second: %zu bytes", size_sent_per_second);
@@ -43,6 +57,7 @@ void log_data_size_per_second(void *pvParameter) {
             count_of_data_points++;
         }
         size_sent_per_second = 0;
+        monitor_ram_usage();
         vTaskDelay(1000 / portTICK_PERIOD_MS); // Delay for 1 second
     }
     vTaskDelete(NULL);

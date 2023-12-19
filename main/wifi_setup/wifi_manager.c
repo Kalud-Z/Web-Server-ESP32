@@ -1,5 +1,3 @@
-//TODO : create two seperate functions. one to connect to local normal wifi. other to connecto to Uni wifi. then you call the correct function bsed on a certain flag set in main.
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
@@ -15,8 +13,16 @@
 #define EXAMPLE_ESP_WIFI_PASS_UNI      "emchibarka"   // Set your password here
 
 
-#define EXAMPLE_ESP_WIFI_SSID_LOCAL      "Zoldyck"  
-#define EXAMPLE_ESP_WIFI_PASS_LOCAL      "wa7diconnected"
+//--------------------------------------------------------------------------------------------------------
+
+
+//To connect tot uni nao network, you have to use the code of normal WPA2 configs , not the WPA2-Enterprise.
+#define EXAMPLE_ESP_WIFI_SSID_LOCAL      "nao"  
+#define EXAMPLE_ESP_WIFI_PASS_LOCAL      "HsPfNaoH25V4"
+
+
+//#define EXAMPLE_ESP_WIFI_SSID_LOCAL      "Zoldyck"  
+//#define EXAMPLE_ESP_WIFI_PASS_LOCAL      "wa7diconnected"
 
 //#define EXAMPLE_ESP_WIFI_SSID_LOCAL      "Kalud_XZ2"  
 //#define EXAMPLE_ESP_WIFI_PASS_LOCAL      "forzaroma"

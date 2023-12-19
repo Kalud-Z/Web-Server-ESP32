@@ -39,7 +39,7 @@ void obtain_time(void) {
 
 
     // Log the time continuously every 3 seconds for 15 seconds
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 1; i++) {
         // Count to 3
         for (int count = 1; count <= 3; count++) {
             ESP_LOGI(TAG_NTP, "Count: %d", count);
@@ -67,7 +67,7 @@ void obtain_time(void) {
         ESP_LOGI(TAG_NTP, "Current time: %s", final_time_str);
 
         // Wait for 3 seconds before the next iteration
-        vTaskDelay(3000 / portTICK_PERIOD_MS);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 
 
