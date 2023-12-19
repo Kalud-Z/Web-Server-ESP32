@@ -17,12 +17,12 @@
 
 
 //To connect tot uni nao network, you have to use the code of normal WPA2 configs , not the WPA2-Enterprise.
-#define EXAMPLE_ESP_WIFI_SSID_LOCAL      "nao"  
-#define EXAMPLE_ESP_WIFI_PASS_LOCAL      "HsPfNaoH25V4"
+//#define EXAMPLE_ESP_WIFI_SSID_LOCAL      "nao"  
+//#define EXAMPLE_ESP_WIFI_PASS_LOCAL      "HsPfNaoH25V4"
 
 
-//#define EXAMPLE_ESP_WIFI_SSID_LOCAL      "Zoldyck"  
-//#define EXAMPLE_ESP_WIFI_PASS_LOCAL      "wa7diconnected"
+#define EXAMPLE_ESP_WIFI_SSID_LOCAL      "Zoldyck"  
+#define EXAMPLE_ESP_WIFI_PASS_LOCAL      "wa7diconnected"
 
 //#define EXAMPLE_ESP_WIFI_SSID_LOCAL      "Kalud_XZ2"  
 //#define EXAMPLE_ESP_WIFI_PASS_LOCAL      "forzaroma"

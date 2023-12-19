@@ -18,11 +18,11 @@
 const char *TAG_WS = "websocket";
 
 
-int64_t durationOfSimulation = 30000000; // 30 seconds in microseconds
-//int64_t durationOfSimulation = 120000000; // 2 minutes seconds in microseconds
-const int numberOfChannels = 6;
-const int dataPointsPerBatch = 10;
-const int sampleRate = 10;  
+//int64_t durationOfSimulation = 30000000; // 30 seconds in microseconds
+int64_t durationOfSimulation = 300000000; // 5 minutes seconds in microseconds
+const int numberOfChannels = 10;
+const int dataPointsPerBatch = 50;
+const int sampleRate = 50;  
 
 
 volatile size_t total_size_sent = 0;

@@ -55,6 +55,7 @@ void app_main(void)
       // Check the flag and call the appropriate function
     if (useUniWifi) {  wifi_init_sta_UNI();} else {wifi_init_sta_LOCAL();}
 
+
     while (1) {
         if (wifi_connected_flag) {
             start_webserver();
