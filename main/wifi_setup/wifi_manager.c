@@ -20,9 +20,12 @@
 //#define EXAMPLE_ESP_WIFI_SSID_LOCAL      "nao"  
 //#define EXAMPLE_ESP_WIFI_PASS_LOCAL      "HsPfNaoH25V4"
 
+#define EXAMPLE_ESP_WIFI_SSID_LOCAL      "Villa 46"  
+#define EXAMPLE_ESP_WIFI_PASS_LOCAL      "195719621986198719911993"
 
-#define EXAMPLE_ESP_WIFI_SSID_LOCAL      "Zoldyck"  
-#define EXAMPLE_ESP_WIFI_PASS_LOCAL      "wa7diconnected"
+
+//#define EXAMPLE_ESP_WIFI_SSID_LOCAL      "Zoldyck"  
+//#define EXAMPLE_ESP_WIFI_PASS_LOCAL      "wa7diconnected"
 
 //#define EXAMPLE_ESP_WIFI_SSID_LOCAL      "Kalud_XZ2"  
 //#define EXAMPLE_ESP_WIFI_PASS_LOCAL      "forzaroma"

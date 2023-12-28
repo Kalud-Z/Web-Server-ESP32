@@ -18,9 +18,9 @@
 const char *TAG_WS = "websocket";
 
 
-//int64_t durationOfSimulation = 30000000; // 30 seconds in microseconds
-int64_t durationOfSimulation = 300000000; // 5 minutes seconds in microseconds
-const int numberOfChannels = 10;
+int64_t durationOfSimulation = 30000000; // 30 seconds in microseconds
+//int64_t durationOfSimulation = 300000000; // 5 minutes seconds in microseconds
+const int numberOfChannels = 8;
 const int dataPointsPerBatch = 50;
 const int sampleRate = 50;  
 
