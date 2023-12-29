@@ -33,6 +33,8 @@ volatile size_t size_sent_per_second = 0;
 volatile size_t total_size_per_second = 0; // Total of data sent per second
 volatile int count_of_data_points = 0; // Count of data sent per second records
 
+volatile bool start_simulation = false; 
+
 
 httpd_handle_t server = NULL;
 
@@ -182,9 +184,10 @@ esp_err_t run_simulation(httpd_req_t *req) {
 
 
 
+
 esp_err_t ws_handler(httpd_req_t *req) {
     ESP_LOGI(TAG_WS, "WebSocket Connection Started");
-    xTaskCreate(&log_data_size_per_second, "log_data_task", 2048, NULL, 5, NULL);
+    ESP_LOGI(TAG_WS, "New message received.");
 
     esp_err_t ret1 = send_initial_config_message(req);
     if (ret1 != ESP_OK) {
@@ -192,20 +195,40 @@ esp_err_t ws_handler(httpd_req_t *req) {
         return ESP_FAIL;
     }
 
-    esp_err_t ret2 = run_simulation(req);
-    if (ret2 != ESP_OK) {
-        ESP_LOGE(TAG_WS, "Simulation failed: %s", esp_err_to_name(ret2));
-        return ESP_FAIL; 
-    }
+    uint8_t buf[128] = { 0 }; // Buffer for receiving messages
+    httpd_ws_frame_t ws_pkt;
+    memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
+    ws_pkt.payload = buf;
 
-    esp_err_t ret3 = send_end_simulation_message(req);
-    if (ret3 != ESP_OK) {
-        ESP_LOGE(TAG_WS, "Error sending end frame: %s", esp_err_to_name(ret3));
-        return ESP_FAIL; 
+    // Receive the frame
+    httpd_ws_recv_frame(req, &ws_pkt, sizeof(buf));
+
+    // Handle different frame types
+    switch (ws_pkt.type) {
+        case HTTPD_WS_TYPE_TEXT:
+            ESP_LOGI(TAG_WS, "Received text message: %.*s", ws_pkt.len, ws_pkt.payload);
+            // Check if the message is "START"
+            if (strncmp((char *)ws_pkt.payload, "START", ws_pkt.len) == 0) {
+                start_simulation = true;
+                run_simulation(req); // TODO : in case the client sends "START" again by mistake, we dont re-start the simulation.
+                ESP_LOGI(TAG_WS, "Start simulation command received.");
+            }
+            break;
+
+        default:
+            ESP_LOGI(TAG_WS, "Received unknown message type");
+            break;
     }
+        
+    esp_err_t ret3 = send_end_simulation_message(req);
+
 
     return ESP_OK;
 }
+
+
+
+
 
 
 
