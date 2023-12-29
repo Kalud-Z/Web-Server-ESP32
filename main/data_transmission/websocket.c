@@ -34,10 +34,11 @@ volatile size_t total_size_per_second = 0; // Total of data sent per second
 volatile int count_of_data_points = 0; // Count of data sent per second records
 
 volatile bool start_simulation = false; 
+volatile bool pause_simulation = false; 
+volatile bool continue_simulation = false; 
 
 
 httpd_handle_t server = NULL;
-
 
 
 
