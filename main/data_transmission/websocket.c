@@ -20,7 +20,7 @@ const char *TAG_WS = "websocket";
 
 int64_t durationOfSimulation = 30000000; // 30 seconds in microseconds
 //int64_t durationOfSimulation = 300000000; // 5 minutes seconds in microseconds
-const int numberOfChannels = 8;
+const int numberOfChannels = 10;
 const int dataPointsPerBatch = 50;
 const int sampleRate = 50;  
 
@@ -203,6 +203,16 @@ esp_err_t ws_handler(httpd_req_t *req) {
 
     // Receive the frame
     httpd_ws_recv_frame(req, &ws_pkt, sizeof(buf));
+    ESP_LOGI(TAG_WS, "Received text message: %.*s", ws_pkt.len, ws_pkt.payload);
+
+    ESP_LOGI(TAG_WS, "Request Method: %d", req->method);
+
+// Log the URI of the request
+ESP_LOGI(TAG_WS, "Request URI: %s", req->uri);
+
+// Log the content length
+ESP_LOGI(TAG_WS, "Content Length: %d", req->content_len);
+
 
     // Handle different frame types
     switch (ws_pkt.type) {
@@ -211,8 +221,8 @@ esp_err_t ws_handler(httpd_req_t *req) {
             // Check if the message is "START"
             if (strncmp((char *)ws_pkt.payload, "START", ws_pkt.len) == 0) {
                 start_simulation = true;
-                run_simulation(req); // TODO : in case the client sends "START" again by mistake, we dont re-start the simulation.
                 ESP_LOGI(TAG_WS, "Start simulation command received.");
+                run_simulation(req); // TODO : in case the client sends "START" again by mistake, we dont re-start the simulation.
             }
             break;
 
